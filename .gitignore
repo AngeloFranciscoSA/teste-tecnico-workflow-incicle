@@ -20,6 +20,10 @@ load-tests/results/*.json
 # openapi (gerado em runtime)
 openapi.yaml
 
+# IDEs
+.idea/
+.vscode/
+
 # OS
 .DS_Store
 Thumbs.db
