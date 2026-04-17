@@ -6,7 +6,6 @@
 
 - Integração NestJS first-class via `@nestjs/microservices`.
 - Exchange `topic` roteia eventos por padrão semântico: `workflow.instance.submitted`, `workflow.step.approved`.
-- Dead Letter Exchange (DLX): mensagens que falham após N tentativas vão para DLX — sem perda silenciosa.
 - Durabilidade com `durable: true` — eventos sobrevivem a restarts.
 - Operação simples via Docker: sem ZooKeeper ou gerenciamento de partições.
 
@@ -57,13 +56,15 @@ Transação única:
   1. UPDATE instance_steps (decisão)
   2. INSERT outbox_events (evento serializado)
 
-Poller (processo separado):
+Scheduler (@Cron a cada 10s — OutboxSchedulerService):
   3. SELECT FROM outbox_events WHERE published = false
   4. Publica no RabbitMQ
   5. UPDATE outbox_events SET published = true
 ```
 
-Falhas no step 4 são seguras: o poller vai tentar novamente. Com idempotency key nos consumers, publicações duplicadas são ignoradas.
+O `OutboxSchedulerService` usa `@Cron(CronExpression.EVERY_10_SECONDS)` para garantir que eventos pendentes sejam publicados mesmo que nenhuma ação de negócio ocorra. Além disso, cada handler chama `publishPending()` imediatamente após o commit para minimizar latência de entrega no caminho feliz.
+
+Falhas no step 4 são seguras: o scheduler tentará novamente no próximo ciclo. Com idempotency key nos consumers, publicações duplicadas são ignoradas.
 
 ---
 
