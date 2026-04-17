@@ -1,0 +1,21 @@
+# dependencies
+node_modules/
+
+# build output
+dist/
+coverage/
+
+# environment
+.env
+.env.local
+.env.*.local
+
+# logs (mantém a pasta, ignora os arquivos gerados)
+logs/*.log
+
+# openapi (gerado em runtime)
+openapi.yaml
+
+# OS
+.DS_Store
+Thumbs.db

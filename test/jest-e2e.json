@@ -1,0 +1,18 @@
+{
+  "moduleFileExtensions": ["js", "json", "ts"],
+  "rootDir": ".",
+  "testEnvironment": "node",
+  "testRegex": ".e2e-spec.ts$",
+  "transform": {
+    "^.+\\.(t|j)s$": "ts-jest"
+  },
+  "testTimeout": 60000,
+  "moduleNameMapper": {
+    "^@shared/(.*)$": "<rootDir>/../src/shared/$1",
+    "^@workflow/(.*)$": "<rootDir>/../src/contexts/workflow/$1",
+    "^@delegation/(.*)$": "<rootDir>/../src/contexts/delegation/$1",
+    "^@analytics/(.*)$": "<rootDir>/../src/contexts/analytics/$1"
+  },
+  "globalSetup": "./setup/global-setup.ts",
+  "globalTeardown": "./setup/global-teardown.ts"
+}

@@ -1,0 +1,234 @@
+# Workflow InCicle — API Collection
+# Compatível com VS Code REST Client e IntelliJ HTTP Client
+#
+# Tokens JWT gerados com JWT_SECRET=change-me (padrão do .env.example)
+# Payload manager : { sub: "user-manager-1",  companyId: "a0000000-...-000001", exp: 9999999999 }
+# Payload director: { sub: "user-director-1", companyId: "a0000000-...-000001", exp: 9999999999 }
+# Se o JWT_SECRET do seu .env for diferente, regenere os tokens com:
+#   node -e "
+#     const c=require('crypto'),s='SEU_SECRET',b=o=>Buffer.from(JSON.stringify(o)).toString('base64').replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'');
+#     const h=b({alg:'HS256',typ:'JWT'}),p=b({sub:'user-manager-1',companyId:'a0000000-0000-0000-0000-000000000001',iat:1744761600,exp:9999999999});
+#     const sig=c.createHmac('sha256',s).update(h+'.'+p).digest('base64').replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'');
+#     console.log(h+'.'+p+'.'+sig);"
+
+@baseUrl    = http://localhost:3000
+@tenantId   = a0000000-0000-0000-0000-000000000001
+@templateId = a0000000-0000-0000-0000-000000000002
+@versionId  = a0000000-0000-0000-0000-000000000003
+@instanceId = b0000000-0000-0000-0000-000000000001
+@managerId  = user-manager-1
+@directorId = user-director-1
+
+@tokenManager  = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJ1c2VyLW1hbmFnZXItMSIsImNvbXBhbnlJZCI6ImEwMDAwMDAwLTAwMDAtMDAwMC0wMDAwLTAwMDAwMDAwMDAwMSIsImlhdCI6MTc0NDc2MTYwMCwiZXhwIjo5OTk5OTk5OTk5fQ.TRwX7loxF0TWgk94HkN93UcMfR-4yIT2o8pvwweZ8JQ
+@tokenDirector = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJ1c2VyLWRpcmVjdG9yLTEiLCJjb21wYW55SWQiOiJhMDAwMDAwMC0wMDAwLTAwMDAtMDAwMC0wMDAwMDAwMDAwMDEiLCJpYXQiOjE3NDQ3NjE2MDAsImV4cCI6OTk5OTk5OTk5OX0.6H6j6NNCTSIRKI8AISaybpKWZgPaPb8gT6n4Cko58mc
+
+# ATENÇÃO: os IDs de step abaixo são gerados dinamicamente no submit.
+# Após chamar POST /instances/:id/submit, faça GET /instances/:id e copie
+# os IDs reais do array "steps" para as variáveis abaixo.
+@stepId1 = substitua-pelo-id-do-step-1-retornado-no-GET-instances
+@stepId2 = substitua-pelo-id-do-step-2-retornado-no-GET-instances
+
+# ─────────────────────────────────────────
+# TEMPLATES
+# ─────────────────────────────────────────
+
+### Criar template
+POST {{baseUrl}}/templates
+Authorization: Bearer {{tokenManager}}
+Content-Type: application/json
+
+{
+  "id": "{{templateId}}",
+  "name": "Aprovação de Compras"
+}
+
+###
+
+### Criar versão draft com 2 steps
+POST {{baseUrl}}/templates/{{templateId}}/versions
+Authorization: Bearer {{tokenManager}}
+Content-Type: application/json
+
+{
+  "id": "{{versionId}}",
+  "steps": [
+    {
+      "id": "c0000000-0000-0000-0000-000000000001",
+      "stepOrder": 1,
+      "stepName": "Aprovação Gerência",
+      "approvalRule": "ALL",
+      "approvers": ["user-manager-1"],
+      "slaHours": 24
+    },
+    {
+      "id": "c0000000-0000-0000-0000-000000000002",
+      "stepOrder": 2,
+      "stepName": "Aprovação Diretoria",
+      "approvalRule": "ANY",
+      "approvers": ["user-director-1", "user-director-2"],
+      "slaHours": 48
+    }
+  ]
+}
+
+###
+
+### Publicar versão
+POST {{baseUrl}}/templates/{{templateId}}/versions/{{versionId}}/publish
+Authorization: Bearer {{tokenManager}}
+Content-Type: application/json
+
+###
+
+### Listar templates
+GET {{baseUrl}}/templates
+Authorization: Bearer {{tokenManager}}
+
+###
+
+### Detalhar template
+GET {{baseUrl}}/templates/{{templateId}}
+Authorization: Bearer {{tokenManager}}
+
+# ─────────────────────────────────────────
+# INSTÂNCIAS
+# ─────────────────────────────────────────
+
+### Criar instância (status: draft)
+POST {{baseUrl}}/instances
+Authorization: Bearer {{tokenManager}}
+Content-Type: application/json
+
+{
+  "id": "{{instanceId}}",
+  "templateId": "{{templateId}}",
+  "versionId": "{{versionId}}"
+}
+
+###
+
+### Submeter instância (gera snapshot e inicia fluxo)
+POST {{baseUrl}}/instances/{{instanceId}}/submit
+Authorization: Bearer {{tokenManager}}
+Content-Type: application/json
+
+###
+
+### Listar instâncias (todas)
+GET {{baseUrl}}/instances
+Authorization: Bearer {{tokenManager}}
+
+###
+
+### Listar instâncias filtradas por status
+GET {{baseUrl}}/instances?status=active
+Authorization: Bearer {{tokenManager}}
+
+###
+
+### Detalhar instância com steps e decisões
+GET {{baseUrl}}/instances/{{instanceId}}
+Authorization: Bearer {{tokenManager}}
+
+###
+
+### Timeline auditável da instância
+GET {{baseUrl}}/instances/{{instanceId}}/timeline
+Authorization: Bearer {{tokenManager}}
+
+# ─────────────────────────────────────────
+# APROVAÇÕES
+# ─────────────────────────────────────────
+
+### Caixa de entrada (steps pendentes do usuário — manager)
+GET {{baseUrl}}/approvals/inbox
+Authorization: Bearer {{tokenManager}}
+
+###
+
+### Aprovar step 1 (manager aprova step 1 — Gerência)
+# Preencha @stepId1 com o ID retornado em GET /instances/:id → steps[0].id
+POST {{baseUrl}}/approvals/{{instanceId}}/steps/{{stepId1}}/approve
+Authorization: Bearer {{tokenManager}}
+Content-Type: application/json
+
+{
+  "comment": "Aprovado conforme orçamento disponível."
+}
+
+###
+
+### Rejeitar step 1 (manager rejeita step 1)
+POST {{baseUrl}}/approvals/{{instanceId}}/steps/{{stepId1}}/reject
+Authorization: Bearer {{tokenManager}}
+Content-Type: application/json
+
+{
+  "comment": "Orçamento excede o limite aprovado para esta categoria."
+}
+
+###
+
+### Aprovar step 2 (director aprova step 2 — Diretoria)
+# Preencha @stepId2 com o ID retornado em GET /instances/:id → steps[1].id
+POST {{baseUrl}}/approvals/{{instanceId}}/steps/{{stepId2}}/approve
+Authorization: Bearer {{tokenDirector}}
+Content-Type: application/json
+
+{
+  "comment": "Aprovado pela diretoria."
+}
+
+# ─────────────────────────────────────────
+# DELEGAÇÕES
+# ─────────────────────────────────────────
+
+### Criar delegação (manager delega para director durante férias)
+POST {{baseUrl}}/delegations
+Authorization: Bearer {{tokenManager}}
+Content-Type: application/json
+
+{
+  "id": "d0000000-0000-0000-0000-000000000001",
+  "delegateId": "{{directorId}}",
+  "startsAt": "2026-04-16T00:00:00.000Z",
+  "expiresAt": "2026-04-30T23:59:59.000Z"
+}
+
+###
+
+### Listar todas as delegações do tenant
+GET {{baseUrl}}/delegations
+Authorization: Bearer {{tokenManager}}
+
+###
+
+### Listar delegações ativas
+GET {{baseUrl}}/delegations/active
+Authorization: Bearer {{tokenManager}}
+
+###
+
+### Revogar delegação
+DELETE {{baseUrl}}/delegations/d0000000-0000-0000-0000-000000000001
+Authorization: Bearer {{tokenManager}}
+
+# ─────────────────────────────────────────
+# ANALYTICS
+# ─────────────────────────────────────────
+
+### Relatório de conformidade de SLA
+GET {{baseUrl}}/analytics/sla-compliance
+Authorization: Bearer {{tokenManager}}
+
+# ─────────────────────────────────────────
+# HEALTH
+# ─────────────────────────────────────────
+
+### Liveness
+GET {{baseUrl}}/health
+
+###
+
+### Readiness (DB + broker)
+GET {{baseUrl}}/health/ready

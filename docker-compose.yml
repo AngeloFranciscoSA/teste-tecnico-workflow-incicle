@@ -1,0 +1,87 @@
+services:
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: production
+    ports:
+      - "${APP_PORT:-3000}:3000"
+    environment:
+      APP_PORT: ${APP_PORT:-3000}
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_NAME: ${DB_NAME:-incicle_workflow}
+      DB_USER: ${DB_USER:-incicle}
+      DB_PASSWORD: ${DB_PASSWORD:-secret}
+      ASYNC_PROVIDER: rabbitmq
+      ASYNC_URL: amqp://guest:guest@rabbitmq:5672
+      JWT_SECRET: ${JWT_SECRET:-change-me}
+      LOG_LEVEL: ${LOG_LEVEL:-info}
+      SLA_DEFAULT_HOURS: ${SLA_DEFAULT_HOURS:-24}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    restart: unless-stopped
+
+  api-test:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: test
+    environment:
+      DB_HOST: postgres
+      DB_HOST_TEST: postgres
+      DB_PORT: 5432
+      DB_NAME: ${DB_NAME:-incicle_workflow}
+      DB_USER: ${DB_USER:-incicle}
+      DB_PASSWORD: ${DB_PASSWORD:-secret}
+      ASYNC_PROVIDER: rabbitmq
+      ASYNC_URL: amqp://guest:guest@rabbitmq:5672
+      JWT_SECRET: ${JWT_SECRET:-change-me}
+      LOG_LEVEL: ${LOG_LEVEL:-info}
+      SLA_DEFAULT_HOURS: ${SLA_DEFAULT_HOURS:-24}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    profiles:
+      - test
+
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: ${DB_NAME:-incicle_workflow}
+      POSTGRES_USER: ${DB_USER:-incicle}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-secret}
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-incicle} -d ${DB_NAME:-incicle_workflow}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  rabbitmq:
+    image: rabbitmq:3.13-management-alpine
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    environment:
+      RABBITMQ_DEFAULT_USER: guest
+      RABBITMQ_DEFAULT_PASS: guest
+    volumes:
+      - rabbitmq_data:/var/lib/rabbitmq
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "ping"]
+      interval: 10s
+      timeout: 10s
+      retries: 10
+
+volumes:
+  postgres_data:
+  rabbitmq_data:
