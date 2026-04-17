@@ -13,6 +13,10 @@ coverage/
 # logs (mantém a pasta, ignora os arquivos gerados)
 logs/*.log
 
+# resultados brutos do k6 (arquivos grandes — summaries são suficientes)
+load-tests/results/*.json
+!load-tests/results/*-summary.json
+
 # openapi (gerado em runtime)
 openapi.yaml
 
