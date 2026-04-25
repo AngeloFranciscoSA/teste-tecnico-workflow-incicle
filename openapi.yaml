@@ -1,0 +1,553 @@
+openapi: 3.0.0
+paths:
+  /templates:
+    post:
+      operationId: TemplatesController_create
+      parameters: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateTemplateDto'
+      responses:
+        '201':
+          description: Template criado
+          content:
+            application/json:
+              schema:
+                example:
+                  id: uuid
+      security: &ref_0
+        - bearer: []
+      summary: Criar template de workflow
+      tags: &ref_1
+        - Templates
+    get:
+      operationId: TemplatesController_findAll
+      parameters: []
+      responses:
+        '200':
+          description: Lista de templates
+      security: *ref_0
+      summary: Listar todos os templates do tenant
+      tags: *ref_1
+  /templates/{id}/versions:
+    post:
+      operationId: TemplatesController_createVersion
+      parameters:
+        - name: id
+          required: true
+          in: path
+          description: UUID do template
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateVersionDto'
+      responses:
+        '201':
+          description: Versão criada
+          content:
+            application/json:
+              schema:
+                example:
+                  id: uuid
+                  versionNumber: 1
+      security: *ref_0
+      summary: Adicionar versão (draft) ao template
+      tags: *ref_1
+  /templates/{id}/versions/{versionId}/publish:
+    post:
+      operationId: TemplatesController_publish
+      parameters:
+        - name: id
+          required: true
+          in: path
+          description: UUID do template
+          schema:
+            type: string
+        - name: versionId
+          required: true
+          in: path
+          description: UUID da versão
+          schema:
+            type: string
+      responses:
+        '201':
+          description: Versão publicada
+          content:
+            application/json:
+              schema:
+                example:
+                  published: true
+      security: *ref_0
+      summary: Publicar versão do template (imutável após publicação)
+      tags: *ref_1
+  /templates/{id}:
+    get:
+      operationId: TemplatesController_findOne
+      parameters:
+        - name: id
+          required: true
+          in: path
+          description: UUID do template
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Template encontrado
+        '404':
+          description: Template não encontrado
+      security: *ref_0
+      summary: Buscar template por ID com suas versões e steps
+      tags: *ref_1
+  /instances:
+    post:
+      operationId: InstancesController_create
+      parameters: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateInstanceDto'
+      responses:
+        '201':
+          description: Instância criada
+          content:
+            application/json:
+              schema:
+                example:
+                  id: uuid
+                  status: active
+      security: &ref_2
+        - bearer: []
+      summary: Criar instância de workflow (ainda em rascunho)
+      tags: &ref_3
+        - Instances
+    get:
+      operationId: InstancesController_findAll
+      parameters:
+        - name: status
+          required: false
+          in: query
+          description: Filtrar por status
+          schema:
+            example: active
+            type: string
+      responses:
+        '200':
+          description: Lista de instâncias
+      security: *ref_2
+      summary: Listar instâncias do tenant
+      tags: *ref_3
+  /instances/{id}/submit:
+    post:
+      operationId: InstancesController_submit
+      parameters:
+        - name: id
+          required: true
+          in: path
+          description: UUID da instância
+          schema:
+            type: string
+      responses:
+        '201':
+          description: Instância submetida
+          content:
+            application/json:
+              schema:
+                example:
+                  submitted: true
+        '400':
+          description: Versão não publicada ou instância inválida
+      security: *ref_2
+      summary: Submeter instância — congela snapshot e inicia o fluxo de aprovação
+      tags: *ref_3
+  /instances/{id}:
+    get:
+      operationId: InstancesController_findOne
+      parameters:
+        - name: id
+          required: true
+          in: path
+          description: UUID da instância
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Instância encontrada
+        '404':
+          description: Instância não encontrada
+      security: *ref_2
+      summary: Buscar instância com steps e decisões
+      tags: *ref_3
+  /instances/{id}/timeline:
+    get:
+      operationId: InstancesController_timeline
+      parameters:
+        - name: id
+          required: true
+          in: path
+          description: UUID da instância
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Timeline de eventos
+      security: *ref_2
+      summary: Timeline auditável da instância (todos os eventos em ordem cronológica)
+      tags: *ref_3
+  /approvals/inbox:
+    get:
+      operationId: ApprovalsController_inbox
+      parameters: []
+      responses:
+        '200':
+          description: Steps pendentes de aprovação
+      security: &ref_4
+        - bearer: []
+      summary: Listar steps pendentes de aprovação para o usuário corrente
+      tags: &ref_5
+        - Approvals
+  /approvals/{instanceId}/steps/{stepId}/approve:
+    post:
+      operationId: ApprovalsController_approve
+      parameters:
+        - name: instanceId
+          required: true
+          in: path
+          description: UUID da instância
+          schema:
+            type: string
+        - name: stepId
+          required: true
+          in: path
+          description: UUID do step
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DecideStepDto'
+      responses:
+        '201':
+          description: Step aprovado
+          content:
+            application/json:
+              schema:
+                example:
+                  approved: true
+        '409':
+          description: >-
+            Conflito de concorrência — outra decisão foi registrada
+            simultaneamente
+      security: *ref_4
+      summary: Aprovar step — idempotente, controla concorrência via optimistic lock
+      tags: *ref_5
+  /approvals/{instanceId}/steps/{stepId}/reject:
+    post:
+      operationId: ApprovalsController_reject
+      parameters:
+        - name: instanceId
+          required: true
+          in: path
+          description: UUID da instância
+          schema:
+            type: string
+        - name: stepId
+          required: true
+          in: path
+          description: UUID do step
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DecideStepDto'
+      responses:
+        '201':
+          description: Step rejeitado
+          content:
+            application/json:
+              schema:
+                example:
+                  rejected: true
+        '409':
+          description: Conflito de concorrência
+      security: *ref_4
+      summary: Rejeitar step — idempotente, encerra o workflow com status rejected
+      tags: *ref_5
+  /delegations:
+    post:
+      operationId: DelegationsController_create
+      parameters: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateDelegationDto'
+      responses:
+        '201':
+          description: Delegação criada
+          content:
+            application/json:
+              schema:
+                example:
+                  id: uuid
+        '422':
+          description: Ciclo de delegação detectado (A→B→C→A)
+      security: &ref_6
+        - bearer: []
+      summary: Criar delegação de aprovação — detecta ciclos automaticamente
+      tags: &ref_7
+        - Delegations
+    get:
+      operationId: DelegationsController_findAll
+      parameters: []
+      responses:
+        '200':
+          description: Lista de delegações
+      security: *ref_6
+      summary: Listar todas as delegações do tenant (ativas e inativas)
+      tags: *ref_7
+  /delegations/active:
+    get:
+      operationId: DelegationsController_findActive
+      parameters: []
+      responses:
+        '200':
+          description: Delegações ativas
+      security: *ref_6
+      summary: Listar apenas delegações ativas e dentro do prazo de vigência
+      tags: *ref_7
+  /delegations/{id}:
+    delete:
+      operationId: DelegationsController_revoke
+      parameters:
+        - name: id
+          required: true
+          in: path
+          description: UUID da delegação
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Delegação revogada
+          content:
+            application/json:
+              schema:
+                example:
+                  revoked: true
+      security: *ref_6
+      summary: Revogar delegação
+      tags: *ref_7
+  /analytics/sla-compliance:
+    get:
+      operationId: AnalyticsController_slaCompliance
+      parameters: []
+      responses:
+        '200':
+          description: Métricas de SLA
+          content:
+            application/json:
+              schema:
+                example:
+                  totalInstances: 150
+                  completedInstances: 120
+                  pendingInstances: 30
+                  totalSteps: 450
+                  breachedSteps: 12
+                  complianceRate: 97.33%
+      security:
+        - bearer: []
+      summary: Relatório de conformidade de SLA por tenant
+      tags:
+        - Analytics
+  /health:
+    get:
+      operationId: HealthController_liveness
+      parameters: []
+      responses:
+        '200':
+          description: ''
+          content:
+            application/json:
+              schema:
+                example:
+                  status: ok
+                  timestamp: '2026-04-15T00:00:00.000Z'
+      summary: Liveness probe — verifica se a aplicação está em pé
+      tags: &ref_8
+        - Health
+  /health/ready:
+    get:
+      operationId: HealthController_readiness
+      parameters: []
+      responses:
+        '200':
+          description: ''
+          content:
+            application/json:
+              schema:
+                example:
+                  status: ok
+                  checks:
+                    database: ok
+                    broker: ok
+                  timestamp: '2026-04-15T00:00:00.000Z'
+      summary: Readiness probe — verifica se banco de dados e broker estão acessíveis
+      tags: *ref_8
+info:
+  title: InCicle Workflow API
+  description: >-
+    API de workflow de aprovações corporativas multiempresa. Suporta templates
+    versionados, regras ALL/ANY/QUORUM, delegação com detecção de ciclo,
+    snapshot imutável, SLA por etapa e auditoria imutável.
+  version: 1.0.0
+  contact: {}
+tags: []
+servers: []
+components:
+  securitySchemes:
+    bearer:
+      scheme: bearer
+      bearerFormat: JWT
+      type: http
+      description: JWT HS256 com claims sub e companyId
+  schemas:
+    CreateTemplateDto:
+      type: object
+      properties:
+        id:
+          type: string
+          example: a0000000-0000-0000-0000-000000000010
+          description: UUID do template
+        name:
+          type: string
+          example: Aprovação de Compras
+          description: Nome do template
+        description:
+          type: string
+          example: Fluxo padrão de aprovação de compras acima de R$ 10.000
+      required:
+        - id
+        - name
+    StepDto:
+      type: object
+      properties:
+        id:
+          type: string
+          example: step-uuid-001
+          description: UUID do step
+        stepOrder:
+          type: number
+          example: 1
+          description: Ordem de execução do step (começa em 1)
+        stepName:
+          type: string
+          example: Aprovação Gerência
+        approvalRule:
+          type: string
+          enum:
+            - ALL
+            - ANY
+            - QUORUM
+          example: ALL
+          description: ALL = todos aprovam, ANY = qualquer um, QUORUM = mínimo N
+        quorumCount:
+          type: number
+          example: 2
+          description: Obrigatório quando approvalRule = QUORUM
+        approvers:
+          example:
+            - user-uuid-1
+            - user-uuid-2
+          description: IDs dos aprovadores
+          type: array
+          items:
+            type: string
+        slaHours:
+          type: number
+          example: 48
+          description: Prazo em horas para SLA do step
+      required:
+        - id
+        - stepOrder
+        - stepName
+        - approvalRule
+        - approvers
+        - slaHours
+    CreateVersionDto:
+      type: object
+      properties:
+        id:
+          type: string
+          example: ver-uuid-001
+          description: UUID da versão
+        steps:
+          type: array
+          items:
+            $ref: '#/components/schemas/StepDto'
+      required:
+        - id
+        - steps
+    CreateInstanceDto:
+      type: object
+      properties:
+        id:
+          type: string
+          example: inst-uuid-001
+          description: UUID da instância (gerado pelo cliente)
+        templateId:
+          type: string
+          example: a0000000-0000-0000-0000-000000000010
+          description: UUID do template
+        versionId:
+          type: string
+          example: ver-uuid-001
+          description: UUID da versão publicada
+      required:
+        - id
+        - templateId
+        - versionId
+    DecideStepDto:
+      type: object
+      properties:
+        comment:
+          type: string
+          example: Aprovado conforme política interna
+          description: Justificativa opcional
+    CreateDelegationDto:
+      type: object
+      properties:
+        id:
+          type: string
+          example: del-uuid-001
+          description: UUID da delegação
+        delegateId:
+          type: string
+          example: user-uuid-002
+          description: UUID do usuário que receberá a delegação
+        startsAt:
+          type: string
+          example: '2026-04-15T00:00:00.000Z'
+          description: Início da vigência (ISO 8601)
+        expiresAt:
+          type: string
+          example: '2026-04-30T23:59:59.000Z'
+          description: Expiração da vigência (ISO 8601)
+      required:
+        - id
+        - delegateId
+        - startsAt
+        - expiresAt

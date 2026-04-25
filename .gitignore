@@ -17,9 +17,6 @@ logs/*.log
 load-tests/results/*.json
 !load-tests/results/*-summary.json
 
-# openapi (gerado em runtime)
-openapi.yaml
-
 # IDEs
 .idea/
 .vscode/
