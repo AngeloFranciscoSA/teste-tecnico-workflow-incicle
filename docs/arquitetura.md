@@ -2,7 +2,7 @@
 
 ## Por que DDD?
 
-Este sistema tem regras de negócio complexas e centrais: lógicas de aprovação (ALL/ANY/QUORUM), snapshots imutáveis que refletem um estado organizacional no tempo, ciclos de delegação e SLA por etapa. Quando a complexidade reside no domínio, não na infraestrutura, DDD é a abordagem correta pois:
+Este sistema tem regras de negócio complexas e centrais: lógicas de aprovação (ALL/ANY/QUORUM), snapshots imutáveis que refletem um estado organizacional no tempo, ciclos de delegação e SLA por etapa. Quando a complexidade reside no domínio, não na infraestrutura, DDD é a abordagem correta, pois:
 
 - **Isola as regras de negócio** da infraestrutura (banco, broker, HTTP). Toda a lógica de aprovação pode ser testada sem subir banco ou fila.
 - **Aggregates definem consistência transacional**: cada transação modifica um único aggregate root, eliminando locks distribuídos complexos.

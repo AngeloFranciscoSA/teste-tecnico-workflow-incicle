@@ -112,7 +112,7 @@ CREATE INDEX ON outbox_events (published, created_at) WHERE published = false;
 
 ## Decisões de Modelagem
 
-**`config JSONB` em `template_versions`** — os steps do template ficam embutidos na versão para facilitar snapshot. Quando a instância é submetida, essa config é copiada para `snapshot JSONB` em `workflow_instances`, tornando a instância imune a alterações futuras no template.
+**`config JSONB` em `template_versions`** — os steps do template ficam embutidos na versão para facilitar o snapshot. Quando a instância é submetida, essa config é copiada para `snapshot JSONB` em `workflow_instances`, tornando a instância imune a alterações futuras no template.
 
 **`decisions JSONB` em `instance_steps`** — as decisões de aprovação/rejeição são armazenadas como array JSONB diretamente no step, não em tabela separada. Isso simplifica o carregamento do aggregate (sem join extra) e é adequado dado que o número de decisões por step é pequeno e limitado pelo número de aprovadores configurados.
 

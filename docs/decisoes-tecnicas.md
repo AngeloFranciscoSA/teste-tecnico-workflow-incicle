@@ -35,7 +35,7 @@ SET status = 'approved', version = version + 1
 WHERE id = $1 AND version = $2
 ```
 
-Pessimistic locking (`SELECT FOR UPDATE`) foi descartado pois manteria o step bloqueado durante toda a chamada ao broker, degradando throughput sob carga.
+Pessimistic locking (`SELECT FOR UPDATE`) foi descartado, pois manteria o step bloqueado durante toda a chamada ao broker, degradando throughput sob carga.
 
 O teste de concorrência usa N=20 requests simultâneos no mesmo step. Com optimistic locking, exatamente 1 deve ser efetivado e os demais retornam 409.
 
@@ -144,11 +144,11 @@ O logger padrão do NestJS (`console.log`) foi substituído pelo **Winston** via
 
 **Configuração:**
 
-| Transport | Nível mínimo | Formato | Rotação |
-|-----------|-------------|---------|---------|
-| Console | `info` | Colorido (dev) / JSON (prod) | — |
-| `logs/app.log` | `info` | JSON | 10 MB, 5 arquivos |
-| `logs/error.log` | `warn` | JSON | 10 MB, 5 arquivos |
+| Transport        | Nível mínimo | Formato                      | Rotação           |
+|------------------|--------------|------------------------------|-------------------|
+| Console          | `info`       | Colorido (dev) / JSON (prod) | —                 |
+| `logs/app.log`   | `info`       | JSON                         | 10 MB, 5 arquivos |
+| `logs/error.log` | `warn`       | JSON                         | 10 MB, 5 arquivos |
 
 **Como usar em qualquer serviço:**
 
@@ -178,6 +178,6 @@ O `context` (terceiro argumento) aparece como campo `context` no JSON e como `[M
 
 Todos os aggregates usam UUID como ID pelos seguintes motivos:
 
-1. **DDD** — o aggregate gera seu próprio ID antes do INSERT, sem depender de sequence do banco.
+1. **DDD** — o aggregate gera o seu próprio ID antes do INSERT, sem depender de sequence do banco.
 2. **Multi-tenancy** — elimina colisão semântica de IDs entre tenants em eventos assíncronos.
 3. **Segurança básica** — IDs não são enumeráveis por iteração sequencial.

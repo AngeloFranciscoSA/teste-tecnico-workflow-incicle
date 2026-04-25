@@ -1,7 +1,7 @@
 # Contrato de API
 
 Swagger interativo disponível em `http://localhost:3000/api`.  
-Spec estática em `openapi.yaml` (gerado automaticamente na inicialização).
+Spec estática em `openapi.yaml` (gerada automaticamente na inicialização).
 
 ---
 
